@@ -4,12 +4,23 @@
 <meta charset="UTF-8">
 <title>Spam Mail Detector</title>
 <style>
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    background-attachment: fixed;       /* Smooth & stable */
+    background-repeat: no-repeat;
+    background-size: cover;
     font-family: 'Segoe UI', sans-serif;
     text-align: center;
     padding-top: 80px;
 }
+
 .container {
     background-color: white;
     border-radius: 14px;
@@ -20,6 +31,7 @@ body {
 }
 h1 { color: #2d3436; margin-bottom: 10px; }
 .sub { color:#636e72; margin-bottom: 20px; font-size: 14px; }
+
 textarea {
     width: 95%;
     height: 150px;
@@ -35,6 +47,7 @@ textarea:focus {
     border-color: #0984e3;
     box-shadow: 0 0 15px rgba(52,152,219,0.2);
 }
+
 button {
     margin-top: 14px;
     background: linear-gradient(90deg,#00b894,#0984e3);
@@ -46,37 +59,63 @@ button {
     font-size: 15px;
 }
 button:hover { transform: translateY(-2px); }
-.result {
+
+/* Result Card */
+.result-card {
     margin-top: 22px;
-    font-size: 20px;
-    font-weight: 700;
-    padding: 12px;
-    border-radius: 10px;
-    display: inline-block;
-    min-width: 220px;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: none;
+    text-align: center;
 }
-.not-spam { background: #dff3e4; color: #2e7d32; border: 1px solid #b6e6bf; }
-.spam { background: #ffe6e6; color: #c62828; border: 1px solid #f2c6c6; }
+
+.spam-card {
+    background: #ffe6e6;
+    border-left: 6px solid #c62828;
+}
+.ham-card {
+    background: #dff3e4;
+    border-left: 6px solid #2e7d32;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.confidence-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(0,0,0,0.2);
+}
 </style>
 </head>
+
 <body>
 <div class="container">
     <h1>Spam Mail Detector</h1>
-    <div class="sub">Enter your email content and check if it's spam 🚀</div>
+    <div class="sub">Enter your email/SMS content below</div>
 
     <textarea id="emailText" placeholder="Enter your email text here..."></textarea>
     <br>
-    <button onclick="checkSpam()">Check</button>
+    <button onclick="checkSpam()">Analyze Text</button>
 
-    <div id="result" class="result" style="display:none;"></div>
+    <div id="resultCard" class="result-card"></div>
 </div>
 
 <script>
 async function checkSpam() {
     const text = document.getElementById('emailText').value.trim();
-    const resultDiv = document.getElementById('result');
-    resultDiv.style.display = 'none';
-    resultDiv.innerText = '';
+    const resultCard = document.getElementById('resultCard');
+
+    resultCard.style.display = "none";
+    resultCard.innerHTML = "";
 
     if (!text) {
         alert('Please enter email text!');
@@ -93,15 +132,33 @@ async function checkSpam() {
         const data = await res.json();
 
         if (data.error) {
-            resultDiv.innerText = data.error;
-            resultDiv.className = 'result spam';
-        } else {
-            const label = data.prediction;
-            resultDiv.innerText = label === 'Spam' ? '🚫 Spam Detected' : '✅ Not Spam';
-            resultDiv.className = 'result ' + (label === 'Spam' ? 'spam' : 'not-spam');
+            resultCard.innerHTML = `<div class="title">Error</div>${data.error}`;
+            resultCard.className = "result-card spam-card";
+        }
+        else {
+            const prediction = data.prediction;           // "Spam" or "Not Spam"
+            const confidence = (data.probability * 100).toFixed(1);
+            const message = data.message;
+
+            const isSpam = prediction === "Spam";
+
+            resultCard.className = "result-card " + (isSpam ? "spam-card" : "ham-card");
+
+            resultCard.innerHTML = `
+                <div class="title">${isSpam ? "🚫 Potential Spam Detected" : "✅ Looks Safe (Ham)"}</div>
+
+                <div style="font-size: 15px; color:#2d3436; margin-bottom:10px;">
+                    ${message}
+                </div>
+
+                <div class="confidence-badge">
+                    Confidence: ${confidence}%
+                </div>
+            `;
         }
 
-        resultDiv.style.display = 'inline-block';
+        resultCard.style.display = "block";
+
     } catch (err) {
         alert('Something went wrong!');
         console.error(err);
