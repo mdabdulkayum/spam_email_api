@@ -37,7 +37,21 @@ def predict():
         prediction = model.predict(message_vector)[0]
         label = "Spam" if prediction else "Not Spam"
 
-        return jsonify({"message": message, "prediction": label})
+        # Probability
+        proba = model.predict_proba(message_vector)[0]  # returns [not_spam_prob, spam_prob]
+
+        probability = float(proba[1]) if label == "Spam" else float(proba[0])
+
+        # probability_data = {
+        #     "not_spam": float(proba[0]),
+        #     "spam": float(proba[1])
+        # }
+
+        return jsonify({
+            "message": message,
+            "prediction": label,
+            "probability": probability
+        })
 
     except Exception as e:
         print("ERROR:", e)
